@@ -109,6 +109,10 @@ type LogRecord = {
 - 插件 enable/disable/load/error
 - 工具准入拒绝、队列深度、活动类预算和 shell 生成
   资源耗尽
+- 启动阶段区间（`when-ready`、`host`、`sidecar`、`plugin-restore`、
+  `window-shown`、`renderer-bootstrap`），带 `elapsedMs` / `durationMs`
+- 采样偏慢时的剪贴板轮询开销（`kind`、`bytes`、`toPngMs`）
+- 更新器检查的 start/done，包括有界的超时结果
 
 ### 绝不记录
 - API 密钥/原始秘密

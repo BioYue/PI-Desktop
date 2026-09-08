@@ -45,11 +45,19 @@ PI-Desktop.app
 7. 创建主窗口/渲染器
 8. Renderer 通过 main 执行 `app/getVersion` 健康检查
 
-如果步骤 3-4 失败：使用恢复消息阻止应用程序。在成功主持之前
-引导服务 RPC、host-core 以事务方式标记先前的待批准批准
-queued/running `plan_approvals` 执行状态已中断并中止它们
-跑步轮流。此内部进程纪元栅栏未序列化或发送
-协议。
+如果步骤 3–4 失败：以恢复消息阻断应用。在一次成功的主机启动开始提供 RPC
+之前，host-core 会以事务方式把先前待处理的审批以及 queued/running 的
+`plan_approvals` 执行状态标记为已中断，并中止它们正在运行的回合。这道内部的
+进程纪元栅栏不会被序列化，也不会经协议发送。
+
+host-core 起来之后，Electron main 会读取 `AppSettings.networkProxy`，并在生成
+agent sidecar 之前应用它（D340）。Chromium 会话使用 `session.setProxy`；主进程
+的 `fetch` 是 `net.fetch`；sidecar 通过 `sidecar.configure` 与
+`PI_DESKTOP_PROXY_JSON` 收到同一份配置。HTTP(S) 的提供商请求使用 undici 的代理
+调度器；SOCKS5 的提供商请求使用带缓冲的 CONNECT 隧道，这样代理即使把 SOCKS
+握手响应合并发送也不会让请求停滞。host-core 的 marketplace `curl` 从已存储的
+设置里取 `--proxy`，并且**不**继承代理环境变量，因此工作区的 Bash 看不到代理
+凭据。
 
 ## 4. 崩溃策略
 
@@ -88,10 +96,14 @@ Linux 打包的 host-core 在 Ubuntu 22.04 上构建，需要 glibc 2.35 或更�
   无法创建其辅助线程。
 - 每次转换时都会通过 `hostStatus` 事件通知 Renderer：
   `{ ok, component?: "host" | "sidecar", restarting?, restarted?, fatal?, message? }`。
-- 每一次仅报告已消失的运输的拒绝 - 在它被拒绝之前被拒绝
-  已发送，或在运输关闭时在飞行中 — 携带
-  `errorCode: HOST_UNAVAILABLE`，因此调用者通过代码对例程拆卸进行分类
-  而不是通过匹配消息文本。
+- 渲染器通知是尽力而为的。一个已被销毁的渲染帧——窗口已关闭而应用仍在
+  托盘/Dock 中运行，或者在 `webContents.isDestroyed()` 翻转之前该帧就已在拆除
+  竞态中消亡——会被丢弃而绝不上抛：监督与重启在没有窗口挂接的情况下继续进行。
+- sidecar 的意外退出会连同它最后几行 stderr（在 main 中以环形缓冲保存）一起
+  记录，因此一次没有堆栈跟踪的崩溃，仍然把它最后的输出留在报告里。
+- 每一次仅报告传输已消失的拒绝——在请求发出之前就被拒绝，或在传输关闭时正在
+  途中——都携带 `errorCode: HOST_UNAVAILABLE`，因此调用方按错误码而不是靠匹配
+  消息文本来归类常规拆除。
 - 读取主机拥有的注册表，仅将可选上下文添加到启动或
   面板（MCP 服务器、用户技能、用户子代理）检查传输可用性
   首先，悄悄地丢弃 `HOST_UNAVAILABLE` 拒绝，降格为空。一个
@@ -123,12 +135,20 @@ Linux 打包的 host-core 在 Ubuntu 22.04 上构建，需要 glibc 2.35 或更�
 的最后一个检查点，并要求 `session.endTurn` 执行 `recoverInflight`，这样已流式的
 文本成为该回合的 `aborted` 行，而不是随进程一起消失。
 
-最小化主窗口是驻留 shell 操作，而不是应用程序
-shutdown: Electron Main 隐藏窗口并使进程保持活动状态
-跨平台托盘。托盘拥有 restore/focus 和显式退出
-行动。从托盘、现有关闭路径或更新安装中退出
-进入上面的正常关机顺序；破坏托盘发生在
-`before-quit` 因此关闭不能被过时的 shell 功能拦截。
+最小化主窗口是常驻 shell 的操作，而不是应用关闭。在 Windows/Linux 上，显式的
+应用最小化操作使用原生任务栏过渡并让进程保持存活；点击 Windows 上已聚焦的
+任务栏按钮走同一个过渡并保留任务栏条目，再点一次则恢复/聚焦同一个窗口。macOS
+的原生最小化仍然是托盘驻留。托盘负责被隐藏到托盘的窗口的 restore/focus，以及
+一个显式的退出操作。从托盘退出、走既有的关闭路径，或安装更新，仍然进入上面
+那套正常的关闭序列；销毁托盘发生在 `before-quit` 期间，因此关闭过程不会被一个
+过时的 shell 可供性拦截。
+
+在 macOS 上，应用在其整个生命周期内以常规（前台）激活策略运行，因此它始终列在
+Dock 和 Cmd+Tab 中：Main 绝不改变进程类型，而置顶的插件启动器是靠
+`skipTransformProcessType` 加入每一个 Space，而不是靠变成附属应用。由于 macOS
+只在 Dock 重新打开时才发出 Electron 的 `activate`，当没有任何窗口可见时，Main
+还会从 `did-become-active` 恢复一个被隐藏到托盘的窗口，这样 Cmd+Tab 与 App
+Exposé 都被覆盖，而不会把主窗口拉到启动器或插件面板前面（ADR 0086）。
 
 `updates/install` 仅在更新后调用 Electron 的退出并安装路径
 达到 `downloaded`。 Electron 仍然发出 `before-quit`，所以正常
