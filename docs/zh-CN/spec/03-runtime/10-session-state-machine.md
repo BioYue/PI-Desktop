@@ -152,6 +152,9 @@ accept_prompt
   然后以原子方式将记录重写为其根用户行之前的前缀；
   结构化输入框快照仅保留渲染器内存
 - mode/project 字段：更改时
+- 临时会话的工具绑定：没有路径的会话使用它自己的
+  `<data_dir>/scratch/<sessionId>` 根目录，同时保持 `projectPath` 缺席；
+  Plan/Goal 的工作区校验仍然要求一个已持久化的项目
 - Plan/Goal 提交：将精确的 Markdown 字节写入新的唯一值
   `.pi/<kind>/*.md`，
   记录 path/hash/size 加上类型和结构 title/question，然后插入

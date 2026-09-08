@@ -47,7 +47,12 @@ Create from template            (the folder opens as the project)
 自述文件，并且仅包含模板实际使用的权限。脚手架拒绝
 写入非空目录。
 
-当前回购示例：
+面板模板包含当前的 `pi-plugin-chrome` v2 标记，以及中性的 PI-Desktop 表面
+令牌。它们的 body 使用 `var(--pi-plugin-titlebar-height, 0px)`，因此同一份
+入口既能在独立窗口中工作，也能在停靠的工作面板视图中工作，而不必再加一个
+顶部占位。
+
+当前仓库示例：
 - `examples/plugins/hello`
 
 ## 4. SDK 和 devkit
@@ -59,6 +64,10 @@ Create from template            (the folder opens as the project)
 - API 类型 (`PiPluginHostApi`)
 - 清单验证功能
 - 测试助手（模拟主机）
+
+SDK 的剪贴板界面包含 `pi.clipboard.getHistory()`，它通过既有的
+`clipboard.read` 权限，返回有界的、最新优先的文本与图片条目。插件作者应当
+用它来实现剪贴板历史功能，而不是轮询 `readText()` 再自建第二份存储。
 
 `@pi-desktop/plugin-devkit` 是工具，而不是运行时，并且可以使用 Node。它拥有
 `scaffold` / `check` / `pack` 和 `pi-plugin` CLI。三位开发商

@@ -235,6 +235,9 @@ Host Main (PI-Desktop)
   `top: var(--pi-plugin-titlebar-height, 46px)`，而不是 `top: 0`。
   插件自己的工具栏可以使用 `-webkit-app-region: drag`，其中的交互控件
   使用 `-webkit-app-region: no-drag`。
+- 当前的面板页面声明 `<meta name="pi-plugin-chrome" content="v2">`，并使用
+  已发布的变量来处理自己的顶部间距。主机不再为这些页面添加内边距，从而避免
+  重复的安全带；没有该标记的页面，出于兼容保留旧的叠加偏移。
 - 需要全出血绘制到主机拖拽带下方的面板，可以声明
   `<meta name="pi-plugin-chrome" content="v3">`。主机保留相同的 46px
   胶囊几何尺寸，但只把页面空白区域切成原生拖拽片段；标准控件以及标记

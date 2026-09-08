@@ -53,6 +53,11 @@ Electron 和 sidecar 不能独立过度接纳相同的资源。
 因此，排队的 `Bash`/read/search 调用在等待时不会保留全局容量
 对于同一会话中的较早突变。
 
+Electron 的 `HostProcess` 把显式的 `HOST_OVERLOADED` 响应，视为面向渲染器的
+调用可重试的背压。它在至多四次重试之间等待 50、100、200 和 400 ms，随后把
+结构化错误返回给调用方。这种重试只适用于准入拒绝；传输失败、超时，以及来自
+已准入请求的错误，绝不会被重放。
+
 ### 请求
 
 ```json
@@ -285,6 +290,17 @@ ids 和非负 `tokensBefore`；它不会插入 message/search 行
 - `session.import` — 以原子方式导入一个转换后的会话；一个非空的
   项目路径在会话之前进行规范化并更新插入到 `projects` 中
   引用它；返回 `{ imported, skipped }`
+
+### Stats
+
+- `stats.getTokenUsageHistory` —— 把已完成 `turns` 的 token 列以及
+  `usage_json` 的 cache/reasoning 字段，汇总进本地日历的 `day` / `week` /
+  `month` 分桶。这是增量 RPC；不升级协议版本。默认范围是有界的
+  （53 周 / 52 周 / 24 个月）。`week` 使用 ISO 周年。范围内的空桶以零值行返回，
+  好让日历消费方看到一个完整的窗口。`session.endTurn.usage` 是该回合持久的
+  合计：父级助手消息加上已结算的子代理用量，而不是对 `message.usage` 的重写。
+  面向用户的仪表板是插件 `pi.token-insights`（D335 / ADR 0173），不是一个设置
+  目标页。
 
 ### Plan 和 Goal 状态和批准
 
