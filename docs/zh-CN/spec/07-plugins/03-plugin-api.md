@@ -21,7 +21,7 @@ declare const pi: PiPluginHostApi;
 
 ## 3. API 概述（MVP）
 
-### 应用程序
+### app
 ```ts
 pi.app.getVersion(): Promise<string>
 pi.app.getLocale(): Promise<string>
@@ -44,7 +44,7 @@ type PluginAppearance = {
 事件（见下文）上收到实时更新。在没有该通道的旧宿主上，调用以
 `UNSUPPORTED` 拒绝；面板应回退到操作系统偏好和它自己的面板内选择。
 
-### 插件
+### plugin
 ```ts
 pi.plugin.getId(): string
 pi.plugin.getManifest(): PluginManifestV1
@@ -58,7 +58,7 @@ pi.plugin.getDataPath(): Promise<string> // plugin-private directory
 PI-Desktop 窗口聚焦且插件激活范围匹配当前项目时，才会调用声明的命令；本版本不会注册操作系统
 全局快捷键。用户编辑后，主机会向插件发送 `plugin:settingsChanged`，便于刷新内存中的配置。
 
-### 命令
+### commands
 ```ts
 pi.commands.register(def: {
  id: string
@@ -70,7 +70,7 @@ pi.commands.register(def: {
 pi.commands.unregister(id: string): Promise<void>
 ```
 
-### 用户界面
+### ui
 ```ts
 pi.ui.openPanel(options?: { title?: string }): Promise<void>
 pi.ui.closePanel(): Promise<void>
@@ -95,7 +95,7 @@ type PluginNotificationPermission = "granted" | "denied" | "unknown" | "unsuppor
 不报告结果。本机交付是尽力而为：操作系统策略可能会抑制
 横幅而不更改持久任务通知收件箱。
 
-### 工作区/fs
+### workspace / fs
 ```ts
 pi.workspace.get(): Promise<{ path: string; name: string } | null>
 
@@ -144,7 +144,7 @@ pi.fs.requestDirectory(): Promise<{ path: string; name: string } | null>
 受保护路径不会出现，`node_modules` 之类的重目录会被跳过。目录始终返回，
 因此即使范围很窄也能得到可导航的树；单次调用最多返回 1000 个条目。
 
-###代理
+### agent
 ```ts
 pi.agent.registerTool(tool: {
  name: string
@@ -197,6 +197,20 @@ type PluginModelInfo = {
 ### session（需要 `session.read`）
 ```ts
 pi.session.getLlmContext(): Promise<PluginLlmContext>
+
+type PluginLlmMessage = {
+  role: "user" | "assistant" | "tool" | "system"
+  content: string
+  toolName?: string
+}
+
+type PluginLlmContext = {
+  sessionId: string
+  modelKey: string | null
+  thinkingLevel?: ThinkingLevel
+  messages: PluginLlmMessage[]
+  truncated: boolean
+}
 ```
 
 插件不能传入 session id。身份来自进行中的 `plugins.execute` 会话（D333 / D336）。
@@ -220,12 +234,14 @@ pi.agent.complete(input: {
 }>
 ```
 
-宿主解析凭据，并通过与 Composer 提示增强相同的路径发起 `tools: []` 的一次性补全。
-插件拿不到密钥。`includeSessionContext: true` 还需要 `session.read` 以及进行中的
-工具会话。system ≤ 32 KiB；消息合计 ≤ 200k 字符；每个插件每滚动 60 秒 8 次
-（`RATE_LIMITED`）；预算 90 秒（`TIMEOUT`）。
+宿主解析凭据，并通过与 Composer 提示增强相同的路径，以 `tools: []` 发起一次性
+补全。插件绝不会收到密钥。`includeSessionContext: true` 还要求 `session.read`
+以及一个进行中的工具会话；宿主会序列化那份上下文，并且当 `messages` 为空时追加
+`Please advise on the executor's situation above.`。系统提示 ≤ 32 KiB；合并后的
+消息 ≤ 200k 字符；每个插件在滚动的 60 秒内至多八次调用（`RATE_LIMITED`）；
+90 秒预算（`TIMEOUT`）。模型输出为空则是 `INVALID_ARGUMENT`。
 
-### 剪贴板/外壳
+### clipboard / shell
 ```ts
 pi.clipboard.readText(): Promise<string>
 pi.clipboard.writeText(text: string): Promise<void>
@@ -276,7 +292,7 @@ pi.browser.cdp(input: { method: string; params?: unknown }): Promise<unknown>
 最多 50 MiB。图片统一返回 PNG 字节及像素尺寸。Electron 没有跨平台的剪贴板变化事件，
 因此由主机在运行期间采样。
 
-### 服务（需要 `background.service`）
+### services（需要 `background.service`）
 ```ts
 pi.services.register(service: {
  id: string // must match a contributes.services[].id
@@ -293,7 +309,7 @@ pi.services.unregister(id: string): Promise<void>
 `start` 在一个进程内是幂等的——在已经运行的进程上进行第二次启动
 服务是无操作的。
 
-### 总线（需要 `bus.publish` / `bus.subscribe`）
+### bus（需要 `bus.publish` / `bus.subscribe`）
 ```ts
 pi.bus.publish(topic: string, payload?: unknown): Promise<void>
 pi.bus.subscribe(
@@ -312,10 +328,10 @@ type PluginBusMessage = {
 ```
 
 `topic` 必须出现在 `contributes.bus.publish` 中； `pattern` 必须出现在
-`contributes.bus.subscribe`。发布者被排除在自己的扇出之外。帽子
+`contributes.bus.subscribe`。发布者被排除在自己的扇出之外。上限与
 威胁模型位于 [04-plugin-security.md](/zh-CN/spec/07-plugins/04-plugin-security) §5.1 中。
 
-### 网
+### net
 ```ts
 pi.net.fetch(input: {
  url: string
@@ -385,6 +401,11 @@ window.pluginBridge.on(event, handler)
 没有窗口控制胶囊、没有拖拽带，其 `--pi-plugin-titlebar-height` 为 `0px` 而非
 `46px`。
 
+使用当前 chrome 契约的独立面板页面声明
+`<meta name="pi-plugin-chrome" content="v2">`，并使用已发布的变量来处理常规流的
+顶部间距。宿主会保留这份由页面自己拥有的间距。没有该标记的页面，仍然通过旧的
+叠加偏移得到支持。
+
 主机拥有的 preload 仅将固定通道转发到插件运行时：
 
 | 频道 | 所需许可 |
@@ -418,9 +439,9 @@ window.pluginBridge.on(event, handler)
 - `workspace:changed` —— 载荷为 `{ path: string; name: string } | null`，
   与 `workspace.get()` 一致，在打开的项目变化时发送。
 
-## 7. 通话审计
+## 7. 调用审计
 
-必须记录以下任何调用以供审核：
+以下任何一种调用都必须记入审计日志：
 
 - fs.writeText
 - fs.remove、fs.requestDirectory，以及每一次被拒绝的 fs 调用（连同路径与
@@ -428,25 +449,24 @@ window.pluginBridge.on(event, handler)
 - fs.openDefault（记录 root-relative 路径以及系统打开是否成功）
 - fs.reveal（记录 root-relative 路径以及文件管理器显示是否成功）
 - fs.readPreview（记录 root-relative 路径以及分类后的 `kind`）
-- 在agent.registerTool之后执行（包括从插件发现的工具）
-  MCP 服务器）
-- 网络获取
+- agent.registerTool 之后的 execute（包括从插件的 MCP 服务器发现的工具）
+- net.fetch
 - shell.openExternal
-- clipboard.read/write（可能是样品）
+- clipboard.read/write（可能被抽样）
 - clipboard.getHistory（记录返回的条目数）
--bus.publish/bus.subscribe/bus.unsubscribe（带有主题和扇出大小）
+- bus.publish / bus.subscribe / bus.unsubscribe（带有主题和扇出大小）
 - browser.navigate / evaluate / cdp / openExternal
-- 服务启动/停止/重新启动
+- service start / stop / restart
 - models.list（返回行数）
 - session.getLlmContext（会话 id、消息数、truncated 标志 —— 不含转录文本）
 - agent.complete（模型 key、体积、usage —— 不含提示或补全文本）
 
 日志字段：
-- 插件ID
-- API
-- TS
-- 会话 ID？
-- 好的/错误代码
+- pluginId
+- api
+- ts
+- sessionId?
+- ok / errorCode
 
 ## 8. 版本控制策略
 
