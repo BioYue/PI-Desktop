@@ -202,25 +202,25 @@ User-Agent 的值；缺失或为空的会话标头总是由对话 id 补回。
 
 ## 3. 内置供应商预设
 
-仅预设预填表单默认值；他们不是一个封闭的世界。
+预设只是预填表单默认值；它们不构成一个封闭的世界。
 
-| 供应商密钥 | 默认协议 | 授权类型 | 需要基本网址 |
+| vendorKey | 默认协议 | authKind | 是否需要 baseUrl |
 |---|---|---|---|
-| 开放性 | 开放性 | api_key | 不 |
-| 人择的 | 人择的 | api_key | 不 |
-| 谷歌 | 谷歌 | api_key | 不 |
-| 开放路由器 | openai_兼容 | api_key_and_base_url | 是的 |
-| 深度搜索 | openai_兼容 | api_key_and_base_url | 是的 |
-| 格罗克 | openai_兼容 | api_key_and_base_url | 是的 |
-| 在一起 | openai_兼容 | api_key_and_base_url | 是的 |
-| 烟花 | openai_兼容 | api_key_and_base_url | 是的 |
-| 米斯塔拉尔 | openai_兼容或本机 | api_key | 可选的 |
-| 赛 | openai_兼容 | api_key_and_base_url | 是的 |
-| azure_openai | openai_兼容 | azure_api_key | 是的 |
-| 基岩 | 基岩 | aws_sdk_默认 | 不 |
-| 奥拉马 | openai_兼容 | 无 | 是的 |
-| 工作室 | openai_兼容 | 无 | 是的 |
-| 定制 | openai_兼容 | api_key_and_base_url | 是的 |
+| openai | openai | api_key | 否 |
+| anthropic | anthropic | api_key | 否 |
+| google | google | api_key | 否 |
+| openrouter | openai_compatible | api_key_and_base_url | 是 |
+| deepseek | openai_compatible | api_key_and_base_url | 是 |
+| groq | openai_compatible | api_key_and_base_url | 是 |
+| together | openai_compatible | api_key_and_base_url | 是 |
+| fireworks | openai_compatible | api_key_and_base_url | 是 |
+| mistral | openai_compatible 或 native | api_key | 可选 |
+| xai | openai_compatible | api_key_and_base_url | 是 |
+| azure_openai | openai_compatible | azure_api_key | 是 |
+| bedrock | bedrock | aws_sdk_default | 否 |
+| ollama | openai_compatible | none | 是 |
+| lmstudio | openai_compatible | none | 是 |
+| custom | openai_compatible | api_key_and_base_url | 是 |
 
 ### 固定 API 风格预设
 
@@ -228,34 +228,33 @@ User-Agent 的值；缺失或为空的会话标头总是由对话 id 补回。
 |---|---|---|---|---|
 | `opencode_go` | `openai_compatible` | `api_key_and_base_url` | `OpenCode Go` | `https://opencode.ai/zen/go/v1` |
 
-OpenCode Go（以及任何 `opencode.ai` 主机）的 LLM 请求必须带稳定的
-`x-opencode-session`。agent-runtime 在会话、子代理、提示增强与插件 one-shot
-上发送该头，并附带 `x-opencode-client: pi-desktop` 与
-`User-Agent: pi-desktop/<APP_VERSION>`。行上可选的 `headers` 会覆盖这些默认值；留空则保持适配器默认。
-
-每行（AI 服务或 OAuth 账户）可在高级选项中用键值行编辑自定义请求头。空映射保持 pi-ai / `claude-cli` / OpenCode 默认。fetch 包装器是最后写入者，因此 Codex 与 Anthropic SDK 无法覆盖。禁止 `Authorization` / `Host` / `Content-Type` 等保留头。遗留的 `userAgent` 读取时迁入 `headers["User-Agent"]`。首次 OAuth 登录不收集请求头，登录后再编辑。覆盖 Anthropic OAuth 的 `claude-cli/…` 可能导致 Claude Pro/Max 拒绝请求。
-
 ### 命名端点预设
 
-这些行由添加提供商对话框的**服务**下拉框创建。命名服务的常见路径是服务 +
-API 密钥；自定义端点在常见路径上并排显示 API 密钥与接口格式。`vendorKey`
-使用 models.dev 提供商键。
+这些行由添加提供商对话框的**服务**下拉框创建，而不是来自一种新协议。它们
+仍然是 `type: "openai_compatible"`。常见路径是服务 + API key；已发布的主机
+以摘要形式展示，展示名称可在 Advanced 中编辑。自定义端点把名称显示在 Base URL
+旁边，再把 API key 显示在 API 格式旁边。`vendorKey` 使用 models.dev 的提供商键。
 
-国际：OpenAI、Anthropic、Google Gemini、OpenRouter、Groq、xAI、Mistral、
-Together、Fireworks、OpenCode Go、Z.AI。
+国际：OpenAI（`responses`）、Anthropic（`anthropic_messages`）、Google Gemini
+（`google_generative_ai`）、OpenRouter、Groq、xAI、Mistral、Together AI、
+Fireworks、OpenCode Go（`opencode_go`）、Z.AI / Z.AI Coding Plan。
 
-国内：DeepSeek、通义千问、月之暗面、智谱 / Coding Plan、硅基流动、火山方舟、
-MiniMax、Kimi 编程。
+国内：DeepSeek、通义千问 DashScope（`alibaba-cn`）、月之暗面
+（`moonshotai-cn`）、智谱 AI / Coding Plan、硅基流动（`siliconflow-cn`）、
+火山方舟、MiniMax（`anthropic_messages`）、Kimi For Coding
+（`anthropic_messages`）。
 
-智谱 / Z.AI 的 Completions 请求仍使用 `thinkingFormat: "zai"` 与
-`zaiToolStream: true`。
+智谱 / Z.AI 的 Completions 请求仍然会收到 `thinkingFormat: "zai"` 与
+`zaiToolStream: true`。pi-ai 的 `zai-coding-cn` 仍是 `zhipuai-coding-plan`
+的别名。
 
 ### 厂商账户预设
 
 这些行由登录创建（设置 → 模型配置 → 厂商账户），而不是由自定义提供商
 对话框创建。列表在运行时由 `models.getProviders().filter(p => p.auth.oauth)`
 派生，因此它跟随 pi-ai 而不是本表；`baseUrl`、`apiStyle` 与 `defaultModelId`
-在登录后由账户自己的目录填入。
+在登录后由该账户自己的目录填入。匹配的 models.dev 记录提供绑定元数据；
+快照中不存在的账户模型保持通用形态。
 
 | vendorKey | 订阅 | 典型 apiStyle | 登录形态 |
 |---|---|---|---|
