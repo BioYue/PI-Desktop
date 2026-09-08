@@ -172,25 +172,25 @@ rollback all registrations from this plugin
 
 至少记录：
 
-- 插件.安装
-- 插件.卸载
-- 插件.启用
-- 插件.禁用
-- 插件.加载.成功
-- 插件加载错误
-- 插件.卸载
-- 插件崩溃
-- 插件.服务.启动/插件.服务.停止
-- 插件.服务.重新启动 / 插件.服务.重新启动.预定
--plugin.services.skipped（缺少权限或超过每个插件的上限）
+- plugin.install
+- plugin.uninstall
+- plugin.enable
+- plugin.disable
+- plugin.load.success
+- plugin.load.error
+- plugin.unload
+- plugin.crash
+- plugin.service.start / plugin.service.stop
+- plugin.service.restart / plugin.service.restart.scheduled
+- plugin.services.skipped（缺少权限或超过每个插件的上限）
 
-领域：
-- 插件ID
-- 版本
-- 源（`installed` | `dev` | `marketplace`）
-- TS
-- 错误代码？
-- 尝试？ / 延迟女士？ （服务重新启动）
+字段：
+- pluginId
+- version
+- source（`installed` | `dev` | `marketplace`）
+- ts
+- errorCode?
+- attempt? / delayMs?（服务重启）
 
 ## 9. 卸载策略
 

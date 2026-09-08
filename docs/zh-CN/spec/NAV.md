@@ -46,7 +46,8 @@
 - [06-settings-ia.md](/zh-CN/spec/04-ux/06-settings-ia)
 - [07-ui-design-system.md](/zh-CN/spec/04-ux/07-ui-design-system)
 - [08-component-spec.md](/zh-CN/spec/04-ux/08-component-spec)
-- [09-交互模式.md](/zh-CN/spec/04-ux/09-interaction-patterns)
+- [09-interaction-patterns.md](/zh-CN/spec/04-ux/09-interaction-patterns)
+- [12-prompt-enhancement.md](/zh-CN/spec/04-ux/12-prompt-enhancement)
 
 ## 5. 安全性
 - [01-security.md](/zh-CN/spec/05-security/01-security)

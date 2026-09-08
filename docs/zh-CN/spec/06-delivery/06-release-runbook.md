@@ -68,8 +68,10 @@ PNG 通过 `BrandLogo`。 PNG 是规范的；
   在 Vite 输出中，并且不会再次复制为原始包树。
 - Chromium 语言环境包适用于英语、简体中文、繁体中文和土耳其语。产品目录
   保持捆绑状态，独立于 Chromium 区域设置。
-- 应用程序图标 `build/icon.icns`（源自规范 `build/icon_1024.png`，作者：
-  `scripts/make-icon.py`）。
+- 应用程序图标 `build/icon.icns`（源自规范 `build/icon_1024.png`，由
+  `scripts/make-icon.py` 生成）。
+- macOS 菜单栏模板 `build/tray-icon-mac.png`，由深色 PI 标记加透明背景派生；
+  Windows/Linux 使用产品 PNG 托盘资源。
 
 ## 4. 发布步骤
 
