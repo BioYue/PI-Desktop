@@ -180,16 +180,24 @@ type ModelCatalogCacheRecord = {
   capabilities: string[]
   contextWindow?: number
   source: "bundled" | "discovered" | "user"
+  /** 渲染器标注：该行解析自随包的 models.dev 快照。 */
+  catalogSource?: "models.dev"
   updatedAt: string
   raw?: unknown
 }
 ```
 
-上下文窗口解析与 sidecar 保持一致：若 models.dev 已发布正数
-`limit.context`，它会替换旧 binding 中的 128k 通用种子；用户在模型
-Advanced 控件中设置的非默认值仍优先。未知模型继续使用 128k 的保守后备。
+## 5. 随包的 models.dev 快照
 
-## 5. IPC / 主机方法（提供商域）
+原始的公开目录被签入发布资源 `apps/desktop/resources/models.dev/api.json`，
+并打包到 `resources/models.dev/api.json`。`scripts/release.mjs` 抓取并校验
+`https://models.dev/api.json`，然后在创建发布标签之前原子地替换那份签入的
+文件。Electron main 在启动时读取这份随包快照，不产生任何网络 I/O。设置 →
+模型配置可以重新抓取该 URL，但成功的响应只更新当前进程的内存内目录；它绝不
+写入打包资源或用户缓存。缓存读取绝不会把提供商凭据发送给 models.dev。Rust 的
+`models` 表继续只存储归一化的提供商选择行；它不需要为这份原始快照做模式变更。
+
+## 6. IPC / 主机方法（提供商域）
 
 - `providers.list`
 - `providers.get`
